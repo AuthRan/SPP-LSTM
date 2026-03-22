@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(D:/AI-ML/Project/Try_Finance/venv/Scripts/activate)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
