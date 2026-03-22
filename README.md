@@ -11,6 +11,12 @@ LSTM-based stock price prediction system for Nifty 50 stocks with an interactive
 - **Visualizations**: Interactive Plotly charts with confidence intervals
 - **Model Metrics**: MAE, RMSE, MAPE, and direction accuracy
 
+## Screenshots
+<img width="1511" height="830" alt="image" src="https://github.com/user-attachments/assets/731e163a-81f5-47f4-9b74-d52cd790f5a2" />
+<img width="1479" height="657" alt="image" src="https://github.com/user-attachments/assets/da800212-79c2-4520-be92-84b276243dc3" />
+<img width="1445" height="734" alt="image" src="https://github.com/user-attachments/assets/3fba59be-68d7-4cfa-b21e-f92ae8097013" />
+
+
 ## Installation
 
 ### Prerequisites
