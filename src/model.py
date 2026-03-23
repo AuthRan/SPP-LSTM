@@ -170,7 +170,7 @@ def train_model(
     )
 
     # Save the best model with a standard name
-    model.save(best_model_path)
+    model.save(str(best_model_path))
 
     # Calculate metrics
     train_pred = model.predict(X_train, verbose=0)
