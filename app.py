@@ -18,6 +18,7 @@ from src.data_loader import fetch_stock_data, get_stock_info, refresh_data
 from src.preprocessing import prepare_data_for_training
 from src.model import build_lstm_model, train_model, evaluate_model
 from src.gru_model import build_gru_model, train_gru_model
+from src.transformer_model import build_transformer_model, train_transformer_model
 from src.baseline_model import MovingAveragePredictor, NaivePredictor
 from src.prediction import predict_with_existing_model
 from src.sp500_tickers import get_nifty_50_tickers, get_ticker_name
@@ -201,8 +202,8 @@ def main():
     # Model type selection
     model_type = st.sidebar.selectbox(
         "Model Type",
-        options=["LSTM", "GRU", "Moving Average (Baseline)", "Naive (Baseline)"],
-        help="Select the model architecture. LSTM and GRU are deep learning models. Baselines are simple statistical methods."
+        options=["LSTM", "GRU", "Transformer", "Moving Average (Baseline)", "Naive (Baseline)"],
+        help="Select the model architecture. LSTM, GRU and Transformer are deep learning models. Baselines are simple statistical methods."
     )
 
     sequence_length = st.sidebar.slider(
@@ -377,6 +378,35 @@ def main():
                     st.session_state.current_model = trained_model
                     st.session_state.model_type = "GRU"
 
+                elif "Transformer" in model_type:
+                    model = build_transformer_model(
+                        sequence_length=sequence_length,
+                        d_model=64,
+                        num_heads=4,
+                        ff_dim=128,
+                        num_layers=2,
+                        dropout_rate=0.1,
+                        forecast_horizon=1
+                    )
+                    trained_model, history, train_metrics = train_transformer_model(
+                        model,
+                        prepared['X_train'],
+                        prepared['y_train'],
+                        prepared['X_test'],
+                        prepared['y_test'],
+                        epochs=epochs,
+                        batch_size=32,
+                        ticker=selected_ticker
+                    )
+                    eval_metrics = evaluate_model(
+                        trained_model,
+                        prepared['X_test'],
+                        prepared['y_test'],
+                        prepared['scaler']
+                    )
+                    st.session_state.current_model = trained_model
+                    st.session_state.model_type = "Transformer"
+
                 elif "Moving Average" in model_type:
                     # Fit baseline model
                     ma_model = MovingAveragePredictor(window=sequence_length)
@@ -452,7 +482,7 @@ def main():
                         model = st.session_state.current_model
                         model_type = st.session_state.get('model_type', 'LSTM')
 
-                        if model_type in ['LSTM', 'GRU']:
+                        if model_type in ['LSTM', 'GRU', 'Transformer']:
                             scaler = st.session_state.scaler
                             from src.prediction import predict_future_prices
                             predictions, confidence_bounds = predict_future_prices(
@@ -604,6 +634,15 @@ def main():
                 gru_model.fit(prepared['X_train'], prepared['y_train'], epochs=20, batch_size=32, verbose=0)
                 gru_metrics = evaluate_model(gru_model, prepared['X_test'], prepared['y_test'], prepared['scaler'])
                 comparison_results['GRU'] = gru_metrics
+
+                # Transformer
+                transformer_model = build_transformer_model(
+                    sequence_length=sequence_length, d_model=64, num_heads=4,
+                    ff_dim=128, num_layers=2, dropout_rate=0.1, forecast_horizon=1
+                )
+                transformer_model.fit(prepared['X_train'], prepared['y_train'], epochs=20, batch_size=32, verbose=0)
+                transformer_metrics = evaluate_model(transformer_model, prepared['X_test'], prepared['y_test'], prepared['scaler'])
+                comparison_results['Transformer'] = transformer_metrics
 
                 # Moving Average
                 ma_model = MovingAveragePredictor(window=sequence_length)
