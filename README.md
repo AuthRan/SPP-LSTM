@@ -1,6 +1,6 @@
 # Stock Market Prediction System 📈
 
-LSTM-based stock price prediction system for Nifty 50 stocks with an interactive Streamlit dashboard.
+LSTM, GRU and Transformer-based stock price prediction system for Nifty 50 stocks with an interactive Streamlit dashboard.
 
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://python.org)
 [![TensorFlow 2.15](https://img.shields.io/badge/TensorFlow-2.15-orange.svg)](https://tensorflow.org)
@@ -15,7 +15,7 @@ LSTM-based stock price prediction system for Nifty 50 stocks with an interactive
 
 ## Features
 
-- **Multiple Model Architectures**: Compare LSTM, GRU, and baseline models
+- **Multiple Model Architectures**: Compare LSTM, GRU, Transformer and baseline models
 - **Real-time Data**: Fetches live data from Yahoo Finance (NSE stocks)
 - **Interactive Dashboard**: Streamlit-based UI for exploration and prediction
 - **Nifty 50 Coverage**: All 50 stocks from India's benchmark index
@@ -34,6 +34,9 @@ LSTM-based stock price prediction system for Nifty 50 stocks with an interactive
 ### Predictions & Confidence Intervals
 ![Predictions](https://github.com/user-attachments/assets/3fba59be-68d7-4cfa-b21e-f92ae8097013)
 
+### Models Comparison 
+Tip: Make sure you have loaded data first
+
 ---
 
 ## Tech Stack
@@ -42,7 +45,7 @@ LSTM-based stock price prediction system for Nifty 50 stocks with an interactive
 |-----------|------------|
 | **Frontend** | Streamlit, Plotly |
 | **Deep Learning** | TensorFlow 2.15, Keras |
-| **Model Architectures** | LSTM, GRU |
+| **Model Architectures** | LSTM, GRU, Transformer |
 | **Data Processing** | Pandas, NumPy, scikit-learn |
 | **Data Source** | Yahoo Finance API (yfinance) |
 | **Deployment** | Streamlit Cloud |
@@ -68,6 +71,10 @@ Input: (60, 1) - 60 days lookback
 ├── GRU(50) + Dropout(0.2)
 ├── Dense(25, relu)
 └── Dense(1) - Output: predicted price
+```
+### Transformer Architecture
+```
+Standard Vanilla Transformer as per 2017 "Attention is all you need paper"
 ```
 
 ### Baseline Models
@@ -111,7 +118,7 @@ streamlit run app.py
 
 1. **Select a Stock**: Choose from Nifty 50 tickers in the sidebar
 2. **Load Data**: Click "Load Data" to fetch 5 years of historical data
-3. **Select Model**: Choose LSTM, GRU, or baseline models
+3. **Select Model**: Choose LSTM, GRU, Transformer or baseline models
 4. **Train Model**: Click "Train Model" to train the selected architecture
 5. **Get Prediction**: Click "Get Prediction" to see future price forecasts
 6. **Compare Models**: Use "Compare All Models" for side-by-side analysis
