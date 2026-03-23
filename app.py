@@ -15,6 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.data_loader import fetch_stock_data, get_stock_info, refresh_data
 from src.preprocessing import prepare_data_for_training
 from src.model import build_lstm_model, train_model, evaluate_model
+from src.gru_model import build_gru_model, train_gru_model
+from src.baseline_model import MovingAveragePredictor, NaivePredictor
 from src.prediction import predict_with_existing_model
 from src.sp500_tickers import get_nifty_50_tickers, get_ticker_name
 
@@ -193,6 +195,14 @@ def main():
 
     # Settings
     st.sidebar.subheader("Model Settings")
+
+    # Model type selection
+    model_type = st.sidebar.selectbox(
+        "Model Type",
+        options=["LSTM", "GRU", "Moving Average (Baseline)", "Naive (Baseline)"],
+        help="Select the model architecture. LSTM and GRU are deep learning models. Baselines are simple statistical methods."
+    )
+
     sequence_length = st.sidebar.slider(
         "Lookback Window (days)",
         min_value=30,
@@ -229,6 +239,7 @@ def main():
         train_model_btn = st.button("🤖 Train Model", use_container_width=True)
 
     predict_btn = st.sidebar.button("🔮 Get Prediction", use_container_width=True)
+    compare_btn = st.sidebar.button("📊 Compare All Models", use_container_width=True, type="secondary")
 
     # Fetch stock info
     if selected_ticker:
@@ -300,7 +311,8 @@ def main():
 
     # Train model
     if train_model_btn and st.session_state.stock_data is not None:
-        with st.spinner("Training LSTM model..."):
+        model_display_name = model_type.split()[0]  # Get "LSTM", "GRU", or "Moving"
+        with st.spinner(f"Training {model_display_name} model..."):
             try:
                 # Prepare data
                 prepared = prepare_data_for_training(
@@ -310,65 +322,118 @@ def main():
                     train_ratio=0.8
                 )
 
-                # Build model
-                model = build_lstm_model(
-                    sequence_length=sequence_length,
-                    units=50,
-                    dropout_rate=0.2,
-                    forecast_horizon=1
-                )
+                # Build and train model based on selection
+                if "LSTM" in model_type:
+                    model = build_lstm_model(
+                        sequence_length=sequence_length,
+                        units=50,
+                        dropout_rate=0.2,
+                        forecast_horizon=1
+                    )
+                    trained_model, history, train_metrics = train_model(
+                        model,
+                        prepared['X_train'],
+                        prepared['y_train'],
+                        prepared['X_test'],
+                        prepared['y_test'],
+                        epochs=epochs,
+                        batch_size=32,
+                        ticker=selected_ticker
+                    )
+                    eval_metrics = evaluate_model(
+                        trained_model,
+                        prepared['X_test'],
+                        prepared['y_test'],
+                        prepared['scaler']
+                    )
+                    st.session_state.current_model = trained_model
+                    st.session_state.model_type = "LSTM"
 
-                # Train
-                trained_model, history, train_metrics = train_model(
-                    model,
-                    prepared['X_train'],
-                    prepared['y_train'],
-                    prepared['X_test'],
-                    prepared['y_test'],
-                    epochs=epochs,
-                    batch_size=32,
-                    ticker=selected_ticker
-                )
+                elif "GRU" in model_type:
+                    model = build_gru_model(
+                        sequence_length=sequence_length,
+                        units=50,
+                        dropout_rate=0.2,
+                        forecast_horizon=1
+                    )
+                    trained_model, history, train_metrics = train_gru_model(
+                        model,
+                        prepared['X_train'],
+                        prepared['y_train'],
+                        prepared['X_test'],
+                        prepared['y_test'],
+                        epochs=epochs,
+                        batch_size=32,
+                        ticker=selected_ticker
+                    )
+                    eval_metrics = evaluate_model(
+                        trained_model,
+                        prepared['X_test'],
+                        prepared['y_test'],
+                        prepared['scaler']
+                    )
+                    st.session_state.current_model = trained_model
+                    st.session_state.model_type = "GRU"
 
-                # Evaluate
-                eval_metrics = evaluate_model(
-                    trained_model,
-                    prepared['X_test'],
-                    prepared['y_test'],
-                    prepared['scaler']
-                )
+                elif "Moving Average" in model_type:
+                    # Fit baseline model
+                    ma_model = MovingAveragePredictor(window=sequence_length)
+                    ma_model.fit(st.session_state.stock_data, feature='Close')
+                    st.session_state.current_model = ma_model
+                    st.session_state.model_type = "MA"
+                    eval_metrics = {
+                        'mae': 0,
+                        'rmse': 0,
+                        'mape': 0,
+                        'direction_accuracy': 0
+                    }
+                    history = None
+
+                elif "Naive" in model_type:
+                    # Fit naive baseline
+                    naive_model = NaivePredictor()
+                    naive_model.fit(st.session_state.stock_data, feature='Close')
+                    st.session_state.current_model = naive_model
+                    st.session_state.model_type = "Naive"
+                    eval_metrics = {
+                        'mae': 0,
+                        'rmse': 0,
+                        'mape': 0,
+                        'direction_accuracy': 0
+                    }
+                    history = None
 
                 st.session_state.model_trained = True
-                st.session_state.current_model = trained_model
                 st.session_state.scaler = prepared['scaler']
 
-                st.success("Model trained successfully!")
+                st.success(f"{model_display_name} model trained successfully!")
 
                 # Show training metrics
                 st.subheader("Training Metrics")
                 create_metrics_row(eval_metrics)
 
-                # Training history chart
-                st.subheader("Training History")
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(
-                    y=history.history['loss'],
-                    name='Training Loss',
-                    line=dict(color='#1f77b4')
-                ))
-                fig.add_trace(go.Scatter(
-                    y=history.history['val_loss'],
-                    name='Validation Loss',
-                    line=dict(color='#ff7f0e')
-                ))
-                fig.update_layout(
-                    title='Model Loss During Training',
-                    xaxis_title='Epoch',
-                    yaxis_title='Loss (MSE)',
-                    template='plotly_white',
-                    height=400
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                # Training history chart (only for deep learning models)
+                if history is not None:
+                    st.subheader("Training History")
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        y=history.history['loss'],
+                        name='Training Loss',
+                        line=dict(color='#1f77b4')
+                    ))
+                    fig.add_trace(go.Scatter(
+                        y=history.history['val_loss'],
+                        name='Validation Loss',
+                        line=dict(color='#ff7f0e')
+                    ))
+                    fig.update_layout(
+                        title='Model Loss During Training',
+                        xaxis_title='Epoch',
+                        yaxis_title='Loss (MSE)',
+                        template='plotly_white',
+                        height=400
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
 
             except Exception as e:
                 st.error(f"Error training model: {str(e)}")
@@ -379,28 +444,40 @@ def main():
         if st.session_state.stock_data is not None:
             with st.spinner("Generating predictions..."):
                 try:
-                    # Try to use existing trained model
+                    # Use existing trained model
                     if st.session_state.get('model_trained'):
                         model = st.session_state.current_model
-                        scaler = st.session_state.scaler
+                        model_type = st.session_state.get('model_type', 'LSTM')
 
-                        from src.prediction import predict_future_prices
-                        predictions, confidence_bounds = predict_future_prices(
-                            model,
-                            st.session_state.stock_data,
-                            scaler,
-                            sequence_length=sequence_length,
-                            forecast_horizon=forecast_horizon
-                        )
+                        if model_type in ['LSTM', 'GRU']:
+                            scaler = st.session_state.scaler
+                            from src.prediction import predict_future_prices
+                            predictions, confidence_bounds = predict_future_prices(
+                                model,
+                                st.session_state.stock_data,
+                                scaler,
+                                sequence_length=sequence_length,
+                                forecast_horizon=forecast_horizon
+                            )
+                            lower_bound = confidence_bounds[0]
+                            upper_bound = confidence_bounds[1]
+                        else:
+                            # Handle baseline models
+                            predictions = model.predict(forecast_horizon)
+                            # Simple confidence bounds for baseline
+                            recent_std = st.session_state.stock_data['Close'].iloc[-sequence_length:].std()
+                            lower_bound = predictions - 1.96 * recent_std
+                            upper_bound = predictions + 1.96 * recent_std
 
                         st.session_state.predictions = {
                             'predictions': predictions,
-                            'lower_bound': confidence_bounds[0],
-                            'upper_bound': confidence_bounds[1],
+                            'lower_bound': lower_bound,
+                            'upper_bound': upper_bound,
                             'prediction_dates': pd.date_range(
                                 start=st.session_state.stock_data.index[-1] + pd.Timedelta(days=1),
                                 periods=forecast_horizon
-                            )
+                            ),
+                            'model_type': model_type
                         }
                     else:
                         # Try to load pre-trained model from disk
@@ -493,6 +570,116 @@ def main():
             st.success(f"📈 **Bullish Trend**: Price expected to increase by {((last_pred - first_pred) / first_pred) * 100:.2f}% over {forecast_horizon} days")
         else:
             st.warning(f"📉 **Bearish Trend**: Price expected to decrease by {((first_pred - last_pred) / first_pred) * 100:.2f}% over {forecast_horizon} days")
+
+    # Model Comparison
+    if compare_btn and st.session_state.stock_data is not None:
+        with st.spinner("Comparing all models..."):
+            try:
+                # Prepare data
+                prepared = prepare_data_for_training(
+                    st.session_state.stock_data,
+                    sequence_length=sequence_length,
+                    forecast_horizon=forecast_horizon,
+                    train_ratio=0.8
+                )
+
+                st.markdown("---")
+                st.subheader("📊 Model Comparison")
+                st.markdown("Comparing all models on the same test data:")
+
+                # Train and evaluate each model
+                comparison_results = {}
+
+                # LSTM
+                lstm_model = build_lstm_model(sequence_length=sequence_length, units=50, dropout_rate=0.2, forecast_horizon=1)
+                lstm_model.fit(prepared['X_train'], prepared['y_train'], epochs=20, batch_size=32, verbose=0)
+                lstm_metrics = evaluate_model(lstm_model, prepared['X_test'], prepared['y_test'], prepared['scaler'])
+                comparison_results['LSTM'] = lstm_metrics
+
+                # GRU
+                gru_model = build_gru_model(sequence_length=sequence_length, units=50, dropout_rate=0.2, forecast_horizon=1)
+                gru_model.fit(prepared['X_train'], prepared['y_train'], epochs=20, batch_size=32, verbose=0)
+                gru_metrics = evaluate_model(gru_model, prepared['X_test'], prepared['y_test'], prepared['scaler'])
+                comparison_results['GRU'] = gru_metrics
+
+                # Moving Average
+                ma_model = MovingAveragePredictor(window=sequence_length)
+                ma_model.fit(st.session_state.stock_data, feature='Close')
+                ma_preds = ma_model.predict(forecast_horizon)
+                # Get actual test values for comparison
+                actual_test = prepared['scaler'].inverse_transform(prepared['y_test'].reshape(-1, 1)).flatten()
+                ma_test_preds = ma_model.predict(len(actual_test))
+                ma_mae = np.mean(np.abs(actual_test - ma_test_preds))
+                ma_rmse = np.sqrt(np.mean((actual_test - ma_test_preds) ** 2))
+                comparison_results['Moving Average'] = {
+                    'mae': ma_mae,
+                    'rmse': ma_rmse,
+                    'mape': 0,
+                    'direction_accuracy': 0
+                }
+
+                # Naive
+                naive_model = NaivePredictor()
+                naive_model.fit(st.session_state.stock_data, feature='Close')
+                naive_preds = naive_model.predict(len(actual_test))
+                naive_mae = np.mean(np.abs(actual_test - naive_preds))
+                naive_rmse = np.sqrt(np.mean((actual_test - naive_preds) ** 2))
+                comparison_results['Naive'] = {
+                    'mae': naive_mae,
+                    'rmse': naive_rmse,
+                    'mape': 0,
+                    'direction_accuracy': 0
+                }
+
+                # Display comparison table
+                comparison_df = pd.DataFrame({
+                    'Model': list(comparison_results.keys()),
+                    'MAE (₹)': [r['mae'] for r in comparison_results.values()],
+                    'RMSE (₹)': [r['rmse'] for r in comparison_results.values()],
+                    'Direction Accuracy (%)': [r.get('direction_accuracy', 0) for r in comparison_results.values()]
+                })
+                comparison_df['MAE (₹)'] = comparison_df['MAE (₹)'].round(2)
+                comparison_df['RMSE (₹)'] = comparison_df['RMSE (₹)'].round(2)
+                comparison_df['Direction Accuracy (%)'] = comparison_df['Direction Accuracy (%)'].round(1)
+
+                st.dataframe(comparison_df, use_container_width=True)
+
+                # Visualize comparison
+                col1, col2 = st.columns(2)
+                with col1:
+                    fig = go.Figure()
+                    for model, metrics in comparison_results.items():
+                        fig.add_trace(go.Bar(
+                            name=model,
+                            x=['MAE', 'RMSE'],
+                            y=[metrics['mae'], metrics['rmse']],
+                            text=[f"{metrics['mae']:.2f}", f"{metrics['rmse']:.2f}"],
+                            textposition='auto'
+                        ))
+                    fig.update_layout(
+                        title='Error Metrics Comparison',
+                        yaxis_title='Error (₹)',
+                        barmode='group',
+                        height=400
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+                with col2:
+                    # Find best model
+                    best_model = min(comparison_results.keys(), key=lambda x: comparison_results[x]['mae'])
+                    st.metric("Best Model (Lowest MAE)", best_model)
+
+                    # Display architecture info
+                    st.info(f"""
+                    **Model Characteristics:**
+                    - **LSTM**: Most powerful, captures long-term dependencies
+                    - **GRU**: Faster training, similar performance to LSTM
+                    - **Moving Average**: Simple baseline, no training needed
+                    - **Naive**: Simplest baseline (random walk hypothesis)
+                    """)
+
+            except Exception as e:
+                st.error(f"Error comparing models: {str(e)}")
 
     # Footer
     st.markdown("---")
