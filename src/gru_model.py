@@ -94,21 +94,22 @@ def train_gru_model(
 
     # Callbacks
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    checkpoint_path = str(save_dir / f"{ticker}_gru_{timestamp}.keras")
-    best_model_path = str(save_dir / f"{ticker}_gru_best.keras")
+    safe_ticker = ticker.replace(".", "_")  # Sanitize for Windows filenames
+    checkpoint_path = str(save_dir / f"{safe_ticker}_gru_{timestamp}.keras")
+    best_model_path = str(save_dir / f"{safe_ticker}_gru_best.keras")
 
     callbacks = [
         EarlyStopping(
             monitor='val_loss',
             patience=10,
             restore_best_weights=True,
-            verbose=1
+            verbose=0
         ),
         ModelCheckpoint(
             filepath=checkpoint_path,
             monitor='val_loss',
             save_best_only=True,
-            verbose=1
+            verbose=0
         )
     ]
 
@@ -119,7 +120,7 @@ def train_gru_model(
         batch_size=batch_size,
         validation_data=(X_test, y_test),
         callbacks=callbacks,
-        verbose=1
+        verbose=0
     )
 
     # Save the best model

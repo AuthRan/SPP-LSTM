@@ -3,11 +3,13 @@ Stock Market Prediction App - Streamlit Frontend for LSTM-based Stock Prediction
 """
 
 import streamlit as st
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import os
 import sys
+import traceback
 
 # Add src to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -437,6 +439,7 @@ def main():
 
             except Exception as e:
                 st.error(f"Error training model: {str(e)}")
+                st.code(traceback.format_exc(), language="python")
                 st.info("Tip: Make sure you have loaded data first")
 
     # Get predictions
