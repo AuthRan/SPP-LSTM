@@ -6,7 +6,7 @@ pandas>=2.0.0
 numpy>=1.24.0
 scikit-learn>=1.3.0
 
-# Deep Learning - CPU version for Streamlit Cloud compatibility
+# Deep Learning - Using CPU-only version for Streamlit Cloud
 tensorflow-cpu==2.15.0
 
 # Visualization
