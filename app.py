@@ -181,7 +181,7 @@ def main():
 
     # Header
     st.markdown('<p class="main-header">📈 Stock Price Predictor</p>', unsafe_allow_html=True)
-    st.markdown("### LSTM-based prediction for Nifty 50 stocks")
+    st.markdown("### AI-powered prediction for Nifty 50 stocks — LSTM, GRU, Transformer & Baselines")
     st.markdown("---")
 
     # Sidebar
@@ -712,10 +712,11 @@ def main():
                     st.metric("Best Model (Lowest MAE)", best_model)
 
                     # Display architecture info
-                    st.info(f"""
+                    st.info("""
                     **Model Characteristics:**
                     - **LSTM**: Most powerful, captures long-term dependencies
                     - **GRU**: Faster training, similar performance to LSTM
+                    - **Transformer**: Attention-based, excels at capturing global patterns
                     - **Moving Average**: Simple baseline, no training needed
                     - **Naive**: Simplest baseline (random walk hypothesis)
                     """)
@@ -727,7 +728,7 @@ def main():
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666;'>
-        <p><strong>Disclaimer:</strong> This tool uses LSTM deep learning for educational purposes only.
+        <p><strong>Disclaimer:</strong> This tool uses deep learning (LSTM, GRU, Transformer) and statistical models for educational purposes only.
         Stock market predictions are inherently uncertain. Past performance does not guarantee future results.
         Always consult a financial advisor before making investment decisions.</p>
     </div>
