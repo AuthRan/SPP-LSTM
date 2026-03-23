@@ -141,8 +141,8 @@ def train_model(
 
     # Callbacks
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    checkpoint_path = save_dir / f"{ticker}_lstm_{timestamp}.keras"
-    best_model_path = save_dir / f"{ticker}_lstm_best.keras"
+    checkpoint_path = str(save_dir / f"{ticker}_lstm_{timestamp}.keras")
+    best_model_path = str(save_dir / f"{ticker}_lstm_best.keras")
 
     callbacks = [
         EarlyStopping(
