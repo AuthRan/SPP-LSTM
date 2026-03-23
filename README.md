@@ -9,7 +9,7 @@ LSTM, GRU and Transformer-based stock price prediction system for Nifty 50 stock
 
 ## 🚀 Live Demo
 
-**[Try the deployed app on Streamlit Cloud](https://spp-lstm-ashu.streamlit.app/)**
+**https://spp-lstm-ashu.streamlit.app/**
 
 ---
 
@@ -35,10 +35,9 @@ LSTM, GRU and Transformer-based stock price prediction system for Nifty 50 stock
 ![Predictions](https://github.com/user-attachments/assets/3fba59be-68d7-4cfa-b21e-f92ae8097013)
 
 ### Models Comparison 
-Tip: Make sure you have loaded data first
+<img width="1408" height="752" alt="Gemini_Generated_Image_uhw0f5uhw0f5uhw0" src="https://github.com/user-attachments/assets/4507f075-0c9a-422e-8bdc-4cbfcb60d579" />
 
 ---
-
 ## Tech Stack
 
 | Component | Technology |
